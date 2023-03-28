@@ -1,0 +1,72 @@
+version: "3"
+services:
+    # Definition of container for DB
+    db:
+        user: "${UID}:${GID}"
+        image: db
+        build: 
+            context: ./
+            dockerfile: ./.docker/db/Dockerfile
+            args:
+                name: "${USER}"
+                uid: "${UID}"
+                gid: "${GID}"
+        env_file:
+            - .env
+        environment:
+            MYSQL_DATABASE: "${DB_DATABASE}"
+            MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
+        volumes:
+            - ./output/db:/var/lib/mysql
+            - ./.docker/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+        
+    # Definition of container for running the job
+    job:
+        user: "${UID}:${GID}"
+        image: job
+        build: 
+            context: ./
+            dockerfile: ./.docker/job/Dockerfile
+            args:
+                name: "${USER}"
+                uid: "${UID}"
+                gid: "${GID}"
+        entrypoint: ["make", "job", "-j"]
+        links:
+            - "db"
+        volumes:
+            - ./output:/home/${USER}/output
+            - ./input:/home/${USER}/input
+            - ./Makefile:/home/${USER}/Makefile
+            - ./job:/home/${USER}/job
+            - .env:/home/${USER}/.env
+    
+    # Definitions for running the service
+    service:
+        user: "${UID}:${GID}"
+        image: service
+        build: 
+            context: ./
+            dockerfile: ./.docker/service/Dockerfile
+            args:
+                name: "${USER}"
+                uid: "${UID}"
+                gid: "${GID}"
+        entrypoint: ["python", "-m", "flask", "run"]
+        environment:
+            FLASK_APP: "service.py"
+            FLASK_RUN_HOST: "0.0.0.0"
+        working_dir: /home/${USER}/service
+        links:
+            - "db"
+        volumes:
+            - ./service:/home/${USER}/service
+
+    server:
+        image: nginx:1.17
+        ports:
+            - 8000:80
+        volumes:
+            - ./.docker/nginx:/etc/nginx/conf.d
+        links:
+            - "service"
