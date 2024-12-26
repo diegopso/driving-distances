@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "ddmc"
+version = "0.1.0"
+description = "Job to measure driving distances of vehicles per day."
+authors = ["Diego Rodrigues <diegopso2@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = "^2.2.1"
+pandas = "^2.2.3"
+python-dotenv = "^1.0.1"
+osmnx = "^2.0.0"
+scikit-learn = "^1.6.0"
+pymysql = "^1.1.1"
+sqlalchemy = "^2.0.36"
+cryptography = "^44.0.0"
+
+
+[tool.poetry.group.dev.dependencies]
+pandas-stubs = "^2.2.3.241126"
+pytest = "^8.3.4"
+ruff = "^0.8.4"
+testcontainers = "^4.9.0"
+mypy = "^1.14.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+start = "ddmc.main:start"

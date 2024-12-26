@@ -1,10 +1,13 @@
-import unittest, datetime
+import datetime
+
 import pandas as pd
+
 from ddmc.transformers.trip_segments import TripSegments
 
-class TripSegmentsTest(unittest.TestCase):
-    def setUp(self):
-        self.df = pd.DataFrame({
+
+def test_identifies_trip_segments():
+    df = pd.DataFrame(
+        {
             "vehicle_id": [
                 "bern-1",
                 "bern-2",
@@ -37,12 +40,11 @@ class TripSegmentsTest(unittest.TestCase):
                 datetime.datetime(2023, 3, 20),
                 datetime.datetime(2023, 3, 31),
                 datetime.datetime(2023, 3, 20),
-            ]
-        })
-    
-    def test_identifiesTripSegments(self):
-        extractor = TripSegments()
-        result = extractor.identify(self.df)
+            ],
+        }
+    )
 
-        self.assertEqual(len(result), 6, 'wrong number of trip segments identified')
+    extractor = TripSegments()
+    result = extractor.identify(df)
 
+    assert len(result) == 6, "wrong number of trip segments identified"

@@ -66,8 +66,12 @@ The pipeline, database, Python/Flask end-point, and web server are managed using
 
 ## Folder Structure
 
-- `.docker` stores Dockerfiles and other container-related configuration files for the containers.
-- `input` stores multiple `csv` files to be extracted, transformed, loaded, and served by the REST end-point. The files must have the following columns: "vehicle_id","location_raw_lat","location_raw_lon","created_timestamp".
-- `job` store the python files responsible for extracting the `csv` files and storing in the database. 
-- `output` used as working directory when extracting the data from the `csv` files. Also stores the DB files.
-- `service` stores the python files for the web service
+```
+├── .docker         # stores Dockerfiles and other container-related configuration files for the containers.
+├── input           # stores `csv` files to be extracted. Columns: "vehicle_id","location_raw_lat","location_raw_lon","created_timestamp".
+├── job             # store the python files responsible for extracting the `csv` files and storing in the database.
+|   ├── ddmc        # the job package.
+|   └── tests       # the job tests using Pytest and TestContainers.
+├── output          # used as working directory when extracting the data from the `csv` files. Also stores the DB files.
+└── service         # stores the python files for the web service.
+```
