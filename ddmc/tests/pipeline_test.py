@@ -30,7 +30,6 @@ def test_processes_data(tmp_path: Path):
 
     loader = CSV(expected_output)
     pipe = Pipeline(
-        place="Bern, CH",
         file=csv_path,
         working_dir=output_dir,
         silent=True,
@@ -42,3 +41,6 @@ def test_processes_data(tmp_path: Path):
 
     df = pd.read_csv(expected_output)
     assert len(df) == 1, "wrong number of entries evaluated"
+    assert df["km_driven"].loc[0] == pytest.approx(
+        4.6, abs=0.1
+    ), "wrong evaluation of km"

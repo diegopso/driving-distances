@@ -11,7 +11,7 @@ class OSM:
     def __init__(self, G: nx.MultiDiGraph) -> None:
         self.G = G
 
-    def coordinatesToNodes(
+    def coordinates_to_nodes(
         self,
         df: pd.DataFrame,
         lat_col: str = "location_raw_lat",
@@ -37,7 +37,7 @@ class OSM:
         if self.G is None:
             raise RuntimeError("Load graph before using OSM class methods.")
 
-        nodes = ox.nearest_nodes(self.G, Y=df[lat_col], X=df[lon_col])
+        nodes = ox.nearest_nodes(self.G, X=df[lon_col], Y=df[lat_col])
         df["nodes"] = nodes
         return df
 

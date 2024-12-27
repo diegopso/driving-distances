@@ -2,16 +2,19 @@ import csv
 import logging
 import os
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 from typing import Callable
 
 import pandas as pd
 
-from .extractors import CSV
+from .extractors import CSV, BoundingBox
 from .extractors import OSM as OSMExtractor
 from .loaders import Loader
 from .transformers import OSM as OSMTransformer
 from .transformers import TripSegments
+
+_BBOX_MARGIN: float = 0.1
 
 
 @dataclass
@@ -27,14 +30,12 @@ class _Step:
 class Pipeline:
     def __init__(
         self,
-        place: str,
         file: str | Path,
         working_dir: str | Path,
         loader: Loader,
         silent: bool = False,
     ) -> None:
         self._file = file
-        self._place = place
         self._working_dir = working_dir
         self._silent = silent
 
@@ -70,13 +71,29 @@ class Pipeline:
         extractor = CSV()
         self._data = extractor.extract(self._file)
 
+    @cached_property
+    def _bbox(self) -> BoundingBox:
+        max_lat, max_lon, min_lat, min_lon = (
+            self.data[["location_raw_lat", "location_raw_lon"]]
+            .agg(["max", "min"])
+            .to_numpy()
+            .flatten()
+            .tolist()
+        )
+        return BoundingBox(
+            min_lon - _BBOX_MARGIN,
+            min_lat - _BBOX_MARGIN,
+            max_lon + _BBOX_MARGIN,
+            max_lat + _BBOX_MARGIN,
+        )
+
     def extract_graph(self) -> None:
         extractor = OSMExtractor(str(self._working_dir))
-        G = extractor.extract(self._place)
+        G = extractor.extract(self._bbox)
         self._osm = OSMTransformer(G)
 
     def transform_coords_to_nodes(self) -> None:
-        self._data = self._osm.coordinatesToNodes(self.data)
+        self._data = self._osm.coordinates_to_nodes(self.data)
         return self.data
 
     def identify_trip_segments(self) -> None:
@@ -85,14 +102,24 @@ class Pipeline:
 
     def eval_driving_distances(self) -> None:
         df = self.data[self.data["src_node"] == self.data["dest_node"]]
-        df = self._osm.geo_distances(df)
-        df = df[["vehicle_id", "day", "km_driven"]]
 
-        self._data = self.data[self.data["src_node"] != self.data["dest_node"]]
-        self._data = self._osm.driving_distances(self.data)
-        self._data = self.data[["vehicle_id", "day", "km_driven"]]
+        if len(df) > 0:
+            df = self._osm.geo_distances(df)
+            df = df[["vehicle_id", "day", "km_driven"]]
 
-        self._data = pd.concat([self.data, df], ignore_index=True)
+        df2 = self.data[self.data["src_node"] != self.data["dest_node"]]
+        if len(df2) > 0:
+            df2 = self._osm.driving_distances(self.data)
+            df2 = self.data[["vehicle_id", "day", "km_driven"]]
+
+        if len(df2) > 0 and len(df) > 0:
+            self._data = pd.concat([self.data, df], ignore_index=True)
+        elif len(df2) > 0:
+            self._data = df2
+        elif len(df) > 0:
+            self._data = df
+        else:
+            raise RuntimeError("No trips found.")
 
     def load(self) -> None:
         self._data = (
@@ -121,14 +148,13 @@ class Pipeline:
 class CheckpointedPipeline(Pipeline):
     def __init__(
         self,
-        place: str,
         file: str | Path,
         work_dir: str | Path,
         loader,
         silent: bool = False,
         cleanCheckpoints: bool = False,
     ) -> None:
-        super().__init__(place, file, work_dir, loader, silent)
+        super().__init__(file, work_dir, loader, silent)
 
         self.step_info = {
             "extract_csv": "Data extracted from CSV",
