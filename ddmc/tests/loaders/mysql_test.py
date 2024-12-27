@@ -2,6 +2,7 @@ from typing import Any, Generator
 
 import pandas as pd
 import pytest
+import sqlalchemy
 from testcontainers.mysql import MySqlContainer  # type: ignore[import-untyped]
 
 from ddmc.loaders.mysql import MySQL
@@ -11,19 +12,25 @@ from ddmc.loaders.mysql import MySQL
 def database() -> Generator[tuple[MySqlContainer, str], Any, Any]:
     with MySqlContainer() as db:
         table_name = "test_driven_distances"
-        db.exec(f"""
-            CREATE TABLE {table_name} (
-                `id` BIGINT NOT NULL AUTO_INCREMENT,
-                `vehicle_id` VARCHAR(255) NOT NULL,
-                `day` DATE NOT NULL,
-                `km_driven` FLOAT NOT NULL,
-                PRIMARY KEY (id)
-            );
-        """)
+
+        engine = sqlalchemy.create_engine(db.get_connection_url())
+        with engine.begin() as connection:
+            connection.execute(
+                sqlalchemy.text(f"""
+                    CREATE TABLE {table_name} (
+                        `id` BIGINT NOT NULL AUTO_INCREMENT,
+                        `vehicle_id` VARCHAR(255) NOT NULL,
+                        `day` DATE NOT NULL,
+                        `km_driven` FLOAT NOT NULL,
+                        PRIMARY KEY (id)
+                    );
+                """)
+            )
 
         yield db, table_name
 
 
+@pytest.mark.integration
 def test_saves_to_db(database: tuple[MySqlContainer, str]) -> None:
     db, table_name = database
     loader = MySQL(
@@ -44,5 +51,10 @@ def test_saves_to_db(database: tuple[MySqlContainer, str]) -> None:
 
     loader.load(df)
 
-    result = db.exec(f"SELECT count(id) from {table_name};")
-    assert len(result) == 2, "no results saved"
+    engine = sqlalchemy.create_engine(db.get_connection_url())
+    with engine.begin() as connection:
+        result = connection.execute(
+            sqlalchemy.text(f"SELECT count(id) from {table_name};")
+        ).scalar()
+
+    assert result == 2, "no results saved"

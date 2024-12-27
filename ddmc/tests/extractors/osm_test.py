@@ -95,7 +95,7 @@ def test_deletes_cache_file(
     place, expected_path = osm_config
     extractor = OSM(working_dir=tmp_path)
 
-    monkeypatch.setattr(ox, "graph_from_place", Counter())
+    monkeypatch.setattr(ox, "graph_from_bbox", Counter())
 
     extractor.extract(place)
     assert expected_path.exists()
