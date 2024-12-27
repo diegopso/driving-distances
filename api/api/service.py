@@ -61,7 +61,3 @@ def create_service() -> Flask:
             return jsonify({"error": str(e)})
 
     return service
-
-
-def start() -> None:
-    create_service().run()

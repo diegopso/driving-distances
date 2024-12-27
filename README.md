@@ -4,6 +4,8 @@ This project evaluates the driving distances of vehicles per day using the road 
 
 ## TLDR
 
+To configure, test and execute the project, just do:
+
 ```bash
 git clone git@github.com:diegopso/driving-distances.git
 cd driving-distances/
@@ -12,7 +14,10 @@ make test
 make run-job
 make run-service
 make call-service
+make clean # to reset everything
 ```
+
+> You can also run integration tests: `make integration-test`
 
 ## Compatibility
 
@@ -20,7 +25,7 @@ This repository was tested on Ubuntu 18 and on Windows 10 using WSL2 with Ubuntu
 
 ## Dependencies
 
-In order to use this project it is needed to install [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/). There are many recipes to make easier to use this repo made with [Makefile](https://www.gnu.org/software/make/manual/make.html). Also, the target `call-service` in the `Makefile` uses [curl](https://curl.se/).
+In order to use this project it is needed to install [Docker](https://docs.docker.com/get-docker/) and [Docker Compose v2](https://docs.docker.com/compose/). There are many recipes to make easier to use this repo made with [Makefile](https://www.gnu.org/software/make/manual/make.html). Additionally, the target `call-service` in the `Makefile` uses [curl](https://curl.se/). Finally, to create virtual environments and run tests, this project uses [Poetry](https://python-poetry.org/).
 
 ## Configuration
 
