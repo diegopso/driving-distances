@@ -1,19 +1,46 @@
-FROM python:3.11
+FROM python:3.10.16-slim as builder
 
-ARG name
-ENV name $name
-ARG uid
-ENV uid $uid
-ARG gid
-ENV gid $gid
+ARG PIP_ROOT_USER_ACTION=ignore
+ARG PIP_DISABLE_PIP_VERSION_CHECK=1
+ARG PIP_NO_CACHE_DIR=1
 
-RUN addgroup --gid $gid $name && \
-    adduser --uid $uid --gid $gid --disabled-password $name
+COPY ./ddmc /ddmc
 
-USER $name
-WORKDIR /home/$name
+WORKDIR /ddmc
 
-COPY ./job/setup.py ./
+RUN pip install --upgrade pip poetry && \
+    poetry export --without-hashes --format requirements.txt >> requirements.txt && \
+    echo 'ddmc @ file:///ddmc ; python_version >= "3.10" and python_version < "4.0"' >> requirements.txt && \
+    python -m venv venv && \
+    venv/bin/pip3 install -r requirements.txt && \
+    venv/bin/pip3 uninstall -y pip
 
-RUN pip install --upgrade pip && \ 
-    pip install .
+FROM python:3.10.16-slim as final
+
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONFAULTHANDLER 1
+ENV PYTHONOPTIMIZE=2
+
+ARG ROOTLESS_USER=monty
+
+RUN apt-get update
+
+COPY --from=builder /ddmc/venv /ddmc/venv
+
+RUN echo "${ROOTLESS_USER}:x:1000:${ROOTLESS_USER}" >> /etc/group && \
+    echo "${ROOTLESS_USER}:x:1001:" >> /etc/group && \
+    echo "${ROOTLESS_USER}:x:1000:1001::/workdir:" >> /etc/passwd && \
+    mkdir -p /workdir && \
+    chmod -R 775 /workdir && \
+    chown -R ${ROOTLESS_USER}:${ROOTLESS_USER} /workdir && \
+    rm -rf /bin /usr/bin /usr/local/bin
+
+    
+COPY --from=builder /usr/local/bin/python /usr/local/bin/python
+    
+USER ${ROOTLESS_USER}
+WORKDIR /workdir
+
+ENTRYPOINT ["/ddmc/venv/bin/start"]

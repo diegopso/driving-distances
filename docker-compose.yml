@@ -2,17 +2,7 @@ version: "3"
 services:
     # Definition of container for DB
     db:
-        user: "${UID}:${GID}"
-        image: db
-        build: 
-            context: ./
-            dockerfile: ./.docker/db/Dockerfile
-            args:
-                name: "${USER}"
-                uid: "${UID}"
-                gid: "${GID}"
-        env_file:
-            - .env
+        image: mysql:5.7-debian
         environment:
             MYSQL_DATABASE: "${DB_DATABASE}"
             MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
@@ -22,24 +12,18 @@ services:
         
     # Definition of container for running the job
     job:
-        user: "${UID}:${GID}"
         image: job
         build: 
             context: ./
             dockerfile: ./.docker/job/Dockerfile
-            args:
-                name: "${USER}"
-                uid: "${UID}"
-                gid: "${GID}"
-        entrypoint: ["make", "job", "-j"]
+        command: -f /workdir/input/bern.csv -o /workdir/output/bern.csv -l mysql
+        env_file:
+            - ./.env
         links:
             - "db"
         volumes:
-            - ./output:/home/${USER}/output
-            - ./input:/home/${USER}/input
-            - ./Makefile:/home/${USER}/Makefile
-            - ./job:/home/${USER}/job
-            - .env:/home/${USER}/.env
+            - ./output:/workdir/output
+            - ./input:/workdir/input
     
     # Definitions for running the service
     service:

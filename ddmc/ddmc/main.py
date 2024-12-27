@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import argparse
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from dotenv import dotenv_values
+import osmnx as ox
 
 from .loaders import CSV, MySQL
 from .pipeline import CheckpointedPipeline
@@ -17,6 +20,17 @@ class _Config:
     db_password: str
     work_dir: str
 
+    @classmethod
+    def from_env(cls) -> _Config:
+        return cls(
+            os.getenv("DB_TABLE", ""),
+            os.getenv("DB_HOST", ""),
+            os.getenv("DB_DATABASE", ""),
+            os.getenv("DB_USERNAME", ""),
+            os.getenv("DB_PASSWORD", ""),
+            os.getenv("WORK_DIR", ""),
+        )
+
 
 @dataclass()
 class _ArgumentBag:
@@ -27,10 +41,6 @@ class _ArgumentBag:
 
 def start() -> None:
     """Main entrypoint of the program."""
-    config = _Config(
-        **dict((k.lower(), str(v).lower()) for k, v in dotenv_values(".env").items())
-    )
-
     parser = argparse.ArgumentParser(
         prog="Eval driving distances",
         description="Evaluate driving distances of vehicles per day.",
@@ -39,7 +49,7 @@ def start() -> None:
     parser.add_argument(
         "-f",
         "--file",
-        help="A file to be extracted instead of scanning the input directory.",
+        help="A file to be extracted.",
         type=str,
         required=True,
     )
@@ -55,6 +65,8 @@ def start() -> None:
 
     args = _ArgumentBag()
     parser.parse_args(namespace=args)
+
+    config = _Config.from_env()
 
     loader: CSV | MySQL
     if args.loader == "mysql":

@@ -1,0 +1,4 @@
+.mypy*
+.vscode
+.pytest*
+cache/
