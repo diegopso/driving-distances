@@ -1,5 +1,8 @@
 """Module to host repositoy classes to access the DB."""
 
+from contextlib import contextmanager
+from typing import Any, Generator
+
 import sqlalchemy as db
 from sqlalchemy import BigInteger, Column, Date, Float, String
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
@@ -16,10 +19,19 @@ class _BaseRepository:
         )
 
     @property
-    def session(self) -> Session:
-        session_maker = sessionmaker(bind=self._engine)
-        session = session_maker()
-        return session
+    @contextmanager
+    def session(self) -> Generator[Session, Any, Any]:
+        try:
+            session_maker = sessionmaker(bind=self._engine, expire_on_commit=False)
+            session = session_maker()
+            yield session
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.expunge_all()
+            session.close()
 
 
 class DrivenDistanceRepository(_BaseRepository):
@@ -71,5 +83,6 @@ class DrivenDistanceRepository(_BaseRepository):
             if query.end_date is not None:
                 q.append(self._model.day <= query.end_date.strftime("%Y-%m-%d"))
 
-        result = self.session.query(self._model).filter(*q).all()
+        with self.session as session:
+            result = session.query(self._model).filter(*q).all()
         return [r.format() for r in result]

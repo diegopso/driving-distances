@@ -9,12 +9,12 @@ To configure, test and execute the project, just do:
 ```bash
 git clone git@github.com:diegopso/driving-distances.git
 cd driving-distances/
-make build
+make
 make test
 make run-job
 make run-service
 make call-service
-make clean # to reset everything
+make clean # to stop and reset everything
 ```
 
 > You can also run integration tests: `make integration-test`
