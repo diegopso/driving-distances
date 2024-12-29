@@ -81,7 +81,7 @@ The pipeline, database, Python/Flask end-point, and web server are managed using
 └── service         # stores the python files for the web service.
 ```
 
-## Kubernettes
+## Kubernetes
 
 You can spin up everything using K8s.
 
