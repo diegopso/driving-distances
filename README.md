@@ -73,12 +73,21 @@ The pipeline, database, Python/Flask end-point, and web server are managed using
 
 ```
 ├── .docker         # stores Dockerfiles and other container-related configuration files for the containers.
+|   ├── db          # the image files for the db (MySQL) container.
+|   ├── job         # the image files for the job container.
+|   ├── nginx       # the image files for the reverse proxy (Nginx) container
+|   └── service     # the image files for the API container.
+├── .k8s            # stores k8s supporting files.
+|   ├── definitions # the yaml definitions.
+|   └── templates   # templates used to generate definitions via Makefile.
 ├── input           # stores `csv` files to be extracted. Columns: "vehicle_id","location_raw_lat","location_raw_lon","created_timestamp".
-├── job             # store the python files responsible for extracting the `csv` files and storing in the database.
+├── ddmc            # store the python files responsible for extracting the `csv` files and storing in the database.
 |   ├── ddmc        # the job package.
 |   └── tests       # the job tests using Pytest and TestContainers.
 ├── output          # used as working directory when extracting the data from the `csv` files. Also stores the DB files.
-└── service         # stores the python files for the web service.
+└── api             # stores the python files for the web service.
+    ├── api         # the api package.
+    └── tests       # the api tests using Pytest and TestContainers.
 ```
 
 ## Kubernetes
