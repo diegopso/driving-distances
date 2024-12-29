@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
-
-import osmnx as ox
 
 from .loaders import CSV, MySQL
 from .pipeline import CheckpointedPipeline
@@ -16,9 +15,9 @@ class _Config:
     db_table: str
     db_host: str
     db_database: str
+    work_dir: str
     db_username: str
     db_password: str
-    work_dir: str
 
     @classmethod
     def from_env(cls) -> _Config:
@@ -26,9 +25,21 @@ class _Config:
             os.getenv("DB_TABLE", ""),
             os.getenv("DB_HOST", ""),
             os.getenv("DB_DATABASE", ""),
+            os.getenv("WORK_DIR", ""),
             os.getenv("DB_USERNAME", ""),
             os.getenv("DB_PASSWORD", ""),
-            os.getenv("WORK_DIR", ""),
+        )
+
+    def __str__(self):
+        return repr(
+            _Config(
+                self.db_table,
+                self.db_host,
+                self.db_database,
+                self.work_dir,
+                "***",
+                "***",
+            )
         )
 
 
@@ -53,7 +64,7 @@ def start() -> None:
         type=str,
         required=True,
     )
-    parser.add_argument("-o", "--output", help="Output path.", type=str, required=True)
+    parser.add_argument("-o", "--output", help="Output path.", type=str, default="")
     parser.add_argument(
         "-l",
         "--loader",
@@ -68,8 +79,12 @@ def start() -> None:
 
     config = _Config.from_env()
 
+    logging.getLogger(__name__).info(f"Startign pipeline for: {args}.")
+    logging.getLogger(__name__).info(f"Using config: {config}.")
+
     loader: CSV | MySQL
     if args.loader == "mysql":
+        logging.getLogger(__name__).info("Selected MySQL loader.")
         loader = MySQL(
             table=config.db_table,
             host_name=config.db_host,
@@ -78,6 +93,9 @@ def start() -> None:
             password=config.db_password,
         )
     else:
+        if not args.output:
+            raise ValueError("output must be provided for CSV loader.")
+        logging.getLogger(__name__).info("Selected CSV loader.")
         loader = CSV(args.output)
 
     if (working_dir_str := config.work_dir) is None:
@@ -87,5 +105,7 @@ def start() -> None:
     if not work_dir.exists():
         raise FileNotFoundError(f"Cant find {work_dir}")
 
+    logging.getLogger(__name__).info(f"Processing file {args.file}.")
     pipeline = CheckpointedPipeline(file=args.file, work_dir=work_dir, loader=loader)
     pipeline.run()
+    logging.getLogger(__name__).info("Done!")

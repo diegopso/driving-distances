@@ -15,7 +15,7 @@ Base: type = declarative_base()
 class _BaseRepository:
     def __init__(self, host_name: str, db_name: str, user: str, password: str) -> None:
         self._engine = db.create_engine(
-            f"mysql+pymysql://{user}:{password}@{host_name}/{db_name}"
+            f"mysql+pymysql://{user}:{password}@{host_name}/{db_name}",
         )
 
     @property

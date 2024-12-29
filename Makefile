@@ -7,7 +7,24 @@ OBJECTS=$(subst input,output,$(subst .csv,.out,$(SOURCES)))
 
 DOCKER_COMPOSE := docker compose
 
-configure: build poetry
+include .env
+export
+
+configure: build poetry .k8s/definitions/secrets.yml .k8s/definitions/input.yml
+
+.k8s/definitions/secrets.yml:
+	[ -f .env ] || cp .env.example .env
+	cp .k8s/templates/secrets.yml .k8s/definitions/secrets.yml
+	echo "  DB_USERNAME: $(shell echo -n 'root' | base64)" >> .k8s/definitions/secrets.yml
+	echo "  DB_PASSWORD: $(shell echo -n 'root' | base64)" >> .k8s/definitions/secrets.yml
+
+.k8s/definitions/input.yml:
+ifeq ($(shell which awk),)
+	echo "WARNING: awk is needed to generate the .k8s/definitions/input.yml"
+else
+	cp .k8s/templates/input.yml .k8s/definitions/input.yml
+	awk '{print "    " $$0}' ./input/bern.csv >> .k8s/definitions/input.yml
+endif
 
 build:
 ifeq ($(shell which ${DOCKER_COMPOSE}),)
@@ -51,10 +68,10 @@ ifeq ($(shell which ${DOCKER_COMPOSE}),)
 endif
 	echo "Requesting daily driven km for vehicle bern-2, between the dates 2023-03-29 and 2023-03-31."
 	echo ""
-	curl 'http://localhost:5000/api/driving-distances?vehicle_id=bern-2&start_date=2023-03-29&end_date=2023-03-31'
+	curl 'http://localhost:32193/api/driving-distances?vehicle_id=bern-2&start_date=2023-03-29&end_date=2023-03-31'
 	echo ""
 	echo ""
-	echo "Try also on browser with: http://localhost:5000/api/driving-distances?vehicle_id=bern-2&start_date=2023-03-29&end_date=2023-03-31"
+	echo "Try also on browser with: http://localhost:32193/api/driving-distances?vehicle_id=bern-2&start_date=2023-03-29&end_date=2023-03-31"
 
 clean:
 	rm -rf output/*
@@ -67,4 +84,4 @@ clean:
 
 %.out : ../input/%.csv
 	cd $(ROOT_DIR)/job
-	python main.py -o "$@" -f "$<" --loader=mysql
+	python main.py -f "$<" --loader=mysql

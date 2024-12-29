@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
 
@@ -58,6 +59,7 @@ def create_service() -> Flask:
                 )
             )
         except Exception as e:
+            logging.getLogger(__name__).exception(str(e))
             return jsonify({"error": str(e)})
 
     return service

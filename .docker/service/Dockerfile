@@ -29,18 +29,18 @@ RUN apt-get update
 
 COPY --from=builder /api/venv /api/venv
 
+COPY ./api /workdir
+
 RUN echo "${ROOTLESS_USER}:x:1000:${ROOTLESS_USER}" >> /etc/group && \
     echo "${ROOTLESS_USER}:x:1001:" >> /etc/group && \
     echo "${ROOTLESS_USER}:x:1000:1001::/workdir:" >> /etc/passwd && \
-    mkdir -p /workdir && \
     chmod -R 775 /workdir && \
     chown -R ${ROOTLESS_USER}:${ROOTLESS_USER} /workdir && \
     rm -rf /bin /usr/bin /usr/local/bin
 
-    
 COPY --from=builder /usr/local/bin/python /usr/local/bin/python
-    
+
 USER ${ROOTLESS_USER}
 WORKDIR /workdir
 
-ENTRYPOINT ["/api/venv/bin/flask", "run"]
+ENTRYPOINT ["/api/venv/bin/waitress-serve", "--port=5000", "--call", "api.service:create_service"]

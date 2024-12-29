@@ -12,6 +12,7 @@ sqlalchemy = "^2.0.36"
 flask = "^3.1.0"
 pydantic = "^2.10.4"
 cryptography = "^44.0.0"
+waitress = "^3.0.2"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -28,6 +29,3 @@ build-backend = "poetry.core.masonry.api"
 plugins = [
   "pydantic.mypy"
 ]
-
-[tool.poetry.scripts]
-start = "api.service:start"

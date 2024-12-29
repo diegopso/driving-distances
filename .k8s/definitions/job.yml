@@ -1,0 +1,35 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ddmc
+spec:
+  template:
+    spec:
+      containers:
+        - name: ddmc
+          image: driven-distances/job
+          imagePullPolicy: IfNotPresent
+          command:
+            [
+              "/ddmc/venv/bin/start",
+              "-f",
+              "/workdir/input/bern.csv",
+              "-l",
+              "mysql",
+            ]
+          envFrom:
+            - configMapRef:
+                name: config
+            - secretRef:
+                name: secrets
+          volumeMounts:
+            - name: input-data
+              mountPath: /workdir/input
+      volumes:
+        - name: input-data
+          configMap:
+            name: input-data
+            defaultMode: 420
+      restartPolicy: Never
+  backoffLimit: 4

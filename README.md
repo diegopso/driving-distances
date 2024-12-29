@@ -80,3 +80,14 @@ The pipeline, database, Python/Flask end-point, and web server are managed using
 ├── output          # used as working directory when extracting the data from the `csv` files. Also stores the DB files.
 └── service         # stores the python files for the web service.
 ```
+
+## Kubernettes
+
+You can spin up everything using K8s.
+
+```bash
+kubectl apply -f .k8s/definitions/
+sleep 30 # give it some time to spin up everything and run the job
+make call-service
+kubectl delete -f .k8s/definitions/
+```

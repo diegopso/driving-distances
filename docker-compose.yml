@@ -2,7 +2,10 @@ version: "3"
 
 services:
   db:
-    image: mysql:5.7-debian
+    image: driven-distances/db
+    build: 
+      context: ./
+      dockerfile: ./.docker/db/Dockerfile
     environment:
       MYSQL_DATABASE: "${DB_DATABASE}"
       MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
@@ -11,7 +14,7 @@ services:
       - ./.docker/db/init.sql:/docker-entrypoint-initdb.d/init.sql
     
   job:
-    image: job
+    image: driven-distances/job
     build: 
       context: ./
       dockerfile: ./.docker/job/Dockerfile
@@ -25,22 +28,18 @@ services:
       - ./input:/workdir/input
   
   service:
-    image: service
+    image: driven-distances/service
     build: 
       context: ./
       dockerfile: ./.docker/service/Dockerfile
     env_file:
       - ./.env
-    environment:
-      FLASK_APP: "api.service:create_service"
-      FLASK_RUN_HOST: "0.0.0.0"
-    working_dir: /workdir
     links:
       - "db"
     volumes:
       - ./api:/workdir
     ports:
-      - 5000:5000
+      - 32193:5000
 
   server:
     image: nginx:1.17
