@@ -95,6 +95,7 @@ The pipeline, database, Python/Flask end-point, and web server are managed using
 You can spin up everything using K8s.
 
 ```bash
+make
 kubectl apply -f .k8s/definitions/
 sleep 30 # give it some time to spin up everything and run the job
 make call-service
